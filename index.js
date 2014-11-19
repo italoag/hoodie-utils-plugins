@@ -15,7 +15,7 @@ utils.handleTask = function (hoodie, methodname, db, task) {
   return function (err) {
     if (err) {
       error(methodname, err);
-      hoodie.task.error(db, task, err);
+      hoodie.task.error(db, task, err.error || { err: err });
     } else {
       log(methodname + ' sucess', task);
       hoodie.task.success(db, task);
