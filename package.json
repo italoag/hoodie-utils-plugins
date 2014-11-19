@@ -1,6 +1,6 @@
 {
   "name": "hoodie-utils-plugins",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "",
   "main": "index.js",
   "scripts": {
@@ -11,5 +11,23 @@
   "dependencies": {
     "debug": "^2.1.0",
     "underscore": "^1.7.0"
-  }
+  },
+  "repository" : { 
+    "type" : "git",
+    "url" : "https://github.com/goappes/hoodie-utils-plugins"
+  },
+  "maintainers": [
+    {
+      "name": "gabriel",
+      "email": "gabriel@goappes.com"
+    },
+    {
+      "name": "joao",
+      "email": "joao@goappes.com"
+    },
+    {
+      "name": "italo",
+      "email": "italo@goappes.com"
+    }
+  ]
 }
