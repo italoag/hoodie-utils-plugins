@@ -1,27 +1,43 @@
-var debug = require('debug');
-var log = debug('app:log');
-var error = debug('app:error');
 var _ = require('underscore');
+var debug = require('debug');  
+var moment = require('moment');
 
-var utils = module.exports;
+var utils = function (plugin) {
+
+  var error = debug('plugin:' + plugin + ':error');
+  var logc = debug('plugin:' + plugin + ':complete');
+  var logs = debug('plugin:' + plugin + ':simple');
+  var logsc = debug('plugin:' + plugin + 'success:complete');
+  var logss = debug('plugin:' + plugin + ':success:simple');
+  error.log = console.error.bind(console);
+  return {
+    debug: function () {
+      return function (name, task) {
+        logs('ts: ' + moment().format() + ' m: ' + name);
+        logc('ts: ' + moment().format() + ' m: ' + name, task); 
+      }
+    },
+
+    handleTask: function (hoodie, methodname, db, task) {
+      return function (err) {
+        if (err) {
+          error('ts: ' + moment().format() + ' m: ' + methodname + ' (error)', err);
+          hoodie.task.error(db, task, err.error || { err: err });
+        } else {
+          logsc('ts: ' + moment().format() + ' m: ' + methodname + ' (sucess)', task);
+          logss('ts: ' + moment().format() + ' m: ' + methodname + ' (sucess)');
+          hoodie.task.success(db, task);
+        }
+      };
+    }
+  }
+ 
+}
 
 utils.dbNametoHoodieId = function (dbName) {
   return dbName.replace(/^user\//, '');
 };
 
- //var pluginDb = hoodie.database(dbname);
-
-utils.handleTask = function (hoodie, methodname, db, task) {
-  return function (err) {
-    if (err) {
-      error(methodname, err);
-      hoodie.task.error(db, task, err.error || { err: err });
-    } else {
-      log(methodname + ' sucess', task);
-      hoodie.task.success(db, task);
-    }
-  };
-};
 
 /**
  * This code is part of hoodiehq/hoodie-plugins-api, patched to add `filters`
@@ -230,3 +246,4 @@ utils.ReplicatorAPI = function ReplicatorAPI (hoodie) {
 
   return Replicator;
 };
+module.exports = exports = utils

@@ -10,11 +10,12 @@
   "license": "ISC",
   "dependencies": {
     "debug": "^2.1.0",
+    "moment": "^2.9.0",
     "underscore": "^1.7.0"
   },
-  "repository" : { 
-    "type" : "git",
-    "url" : "https://github.com/goappes/hoodie-utils-plugins"
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/goappes/hoodie-utils-plugins"
   },
   "maintainers": [
     {
