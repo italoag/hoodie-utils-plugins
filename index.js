@@ -7,25 +7,27 @@ var utils = function (plugin) {
   var error = debug('plugin:' + plugin + ':error');
   var logc = debug('plugin:' + plugin + ':complete');
   var logs = debug('plugin:' + plugin + ':simple');
-  var logsc = debug('plugin:' + plugin + 'success:complete');
+  var logsc = debug('plugin:' + plugin + ':success:complete');
   var logss = debug('plugin:' + plugin + ':success:simple');
   error.log = console.error.bind(console);
   return {
     debug: function () {
       return function (name, task) {
-        logs('ts: ' + moment().format() + ' m: ' + name);
-        logc('ts: ' + moment().format() + ' m: ' + name, task); 
+        var logText = 'ts: ' + moment().format() + ' m: ' + name;
+        logs(logText);
+        logc(logText, task); 
       }
     },
 
     handleTask: function (hoodie, methodname, db, task) {
       return function (err) {
+        var logText = 'db: ' + db + ' ts: ' + moment().format() + ' m: ' + methodname;
         if (err) {
-          error('ts: ' + moment().format() + ' m: ' + methodname + ' (error)', err);
+          error(logText + ' (error)', err);
           hoodie.task.error(db, task, err.error || { err: err });
         } else {
-          logsc('ts: ' + moment().format() + ' m: ' + methodname + ' (sucess)', task);
-          logss('ts: ' + moment().format() + ' m: ' + methodname + ' (sucess)');
+          logsc(logText + ' (sucess)', task);
+          logss(logText + ' (sucess)');
           hoodie.task.success(db, task);
         }
       };
