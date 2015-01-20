@@ -1,27 +1,44 @@
 var _ = require('underscore');
-var debug = require('debug');  
+var debug = require('debug');
 var moment = require('moment');
 
 var utils = function (plugin) {
 
-  var error = debug('plugin:' + plugin + ':error');
-  var logc = debug('plugin:' + plugin + ':complete');
-  var logs = debug('plugin:' + plugin + ':simple');
-  var logsc = debug('plugin:' + plugin + ':success:complete');
-  var logss = debug('plugin:' + plugin + ':success:simple');
-  error.log = console.error.bind(console);
+  var error, logc , logs , logsc, logss;
+  function init(methodname) {
+    error = debug('plugin:' + plugin + ':' + methodname + ':error');
+    logc = debug('plugin:' + plugin + ':' + methodname +  ':complete');
+    logs = debug('plugin:' + plugin + ':' + methodname +  ':simple');
+    logsc = debug('plugin:' + plugin + ':' + methodname +  ':success:complete');
+    logss = debug('plugin:' + plugin + ':' + methodname +  ':success:simple');
+    error.log = console.error.bind(console);
+  }
   return {
+    instrument: function(object) {
+      for (var property in object) {
+        if (object.getOwnPropertyNames(property) && _.isFunction(object[property])) {
+          //todo instrumenct logs
+        }
+      }
+    },
     debug: function () {
-      return function (name, task) {
-        var logText = 'ts: ' + moment().format() + ' m: ' + name;
+      return function (methodname, task) {
+        init(methodname);
+        var logText = 'ts: ' + moment().format() + ' m: ' + methodname;
         logs(logText);
-        logc(logText, task); 
+        logc(logText, task);
       }
     },
 
-    handleTask: function (hoodie, methodname, db, task) {
+    handleTask: function (hoodie, methodname, db, task, cb) {
+      init(methodname);
       return function (err) {
         var logText = 'db: ' + db + ' ts: ' + moment().format() + ' m: ' + methodname;
+        if (!!cb) {
+          logsc(logText + ' (cb)', task);
+          logss(logText + ' (cb)');
+          return cb(err, task);
+        }
         if (err) {
           error(logText + ' (error)', err);
           hoodie.task.error(db, task, err.error || { err: err });
@@ -70,6 +87,7 @@ var utils = function (plugin) {
             };
             ddoc[ddoc_type] = {};
           } else if (err) {
+            console.log('ERROR1!!!!!!!')
             return callback(err);
           }
 
@@ -95,10 +113,13 @@ var utils = function (plugin) {
               rev: ddoc._rev
             });
           }
-
           ddoc[ddoc_type][ddoc_name] = serialised;
-
-          hoodie.request('PUT', ddoc_url, {data: ddoc}, callback);
+          hoodie.request('PUT', ddoc_url, {data: ddoc}, function cb(err, ddoc, res) {
+            if (res.statusCode === 409) {
+              return designDocAdd(ddoc_type, ddoc_name, ddoc_data, callback);
+            }
+            callback(err, ddoc, res);
+          });
         });
       }
 
@@ -207,6 +228,24 @@ var utils = function (plugin) {
         });
       };
 
+
+      db.findSome = function (type, keys, callback) {
+          var url = db._resolve('_all_docs');
+          var opt = {data: {include_docs: true}};
+          if (keys) {
+            opt.data.keys = keys.map(function (v) {
+              return type + '/' + v;
+            });
+          }
+          hoodie.request('GET', url, opt, function (err, data) {
+            if (err) {
+              return callback(err);
+            }
+            var results = data.rows;
+            callback(null, results, _.omit(data, [ 'rows' ]));
+          });
+      };
+
       return db;
     },
 
@@ -246,6 +285,6 @@ var utils = function (plugin) {
     }
 
   }
- 
+
 };
 module.exports = exports = utils
