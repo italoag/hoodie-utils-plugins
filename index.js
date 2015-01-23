@@ -87,7 +87,6 @@ var utils = function (plugin) {
             };
             ddoc[ddoc_type] = {};
           } else if (err) {
-            console.log('ERROR1!!!!!!!')
             return callback(err);
           }
 
