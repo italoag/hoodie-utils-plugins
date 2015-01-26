@@ -91,7 +91,7 @@ var utils = function (plugin) {
           }
 
           // View functions need to be serialised/stringified.
-          if (ddoc_type === 'views') {
+          if (ddoc_type === 'views' || ddoc_type === 'fulltext') {
             serialised = _.reduce(ddoc_data, function (memo, v, k) {
               memo[k] = _.isFunction(v) ? v.toString() : v;
               return memo;
@@ -174,6 +174,25 @@ var utils = function (plugin) {
       };
 
 
+      /**
+       * Add/remove indexes using generic methods
+
+      /**
+       * Creates new index design doc with CouchDB view on db
+       */
+
+      db.addFti = function (name, mapReduce, callback) {
+        designDocAdd('fulltext', name, mapReduce, callback);
+      };
+
+      /**
+       * Removes couchdb view from db
+       */
+
+      db.removeFti = function (name, callback) {
+        designDocRemove('fulltext', name, callback);
+      };
+
     /**
        * Query a couchdb view on db
        *
@@ -212,6 +231,41 @@ var utils = function (plugin) {
         }
 
         hoodie.request('GET', view_url, function (err, data) {
+          if (err) {
+            return callback(err);
+          }
+          var results = data.rows;
+          // If `params.parse` was set we need to parse the value in each row
+          // as a proper document.
+          if (params && params.parse) {
+            results = data.rows.map(function (r) {
+              return options.parse(r.value);
+            });
+          }
+          callback(null, results, _.omit(data, [ 'rows' ]));
+        });
+      };
+
+      db.queryFti = function (index, params, callback) {
+        // `params` is optional, when only two args passed second is callback.
+        if (arguments.length === 2) {
+          callback = params;
+          params = null;
+        }
+        var fti_url = '_fti/local' + db._resolve('_design/fulltext/' + index);
+        // If params have been passed we build the query string.
+        if (params) {
+          var qs = _.reduce(params, function (memo, v, k) {
+            if (k === 'parse') { return memo; }
+            if (memo) { memo += '&'; }
+            return memo + k + '=' + encodeURIComponent(v);
+          }, '');
+          if (qs) {
+            fti_url += '?' + qs;
+          }
+        }
+        hoodie.request('GET', fti_url, function (err, data) {
+          debugger;
           if (err) {
             return callback(err);
           }
